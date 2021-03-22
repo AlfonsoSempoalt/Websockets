@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            textarea {
+                width: 300px;
+                height: 150px;
+            }
+        </style>
+        <script>
+            var ws = null;
+            //entidad a ser enviada 
+            const personita = {
+                nombre: "Pedro",
+                apellido: "lopez"
+            }
+            //funcion que maneja el click del botón enviar
+            function click() {
+                var txtMsjs = document.getElementById("txtMsjs");
+                var txtMsj = document.getElementById("txtMsj");
+                txtMsjs.value += "\n" + "YO: " + txtMsj.value;
+                //aqui se manda el mensaje de la caja de texto al websocket
+                ws.send(txtMsj.value);
+            }
+
+            function click2() {
+                var txtMsjs = document.getElementById("txtMsjs");
+                var txtMsj = document.getElementById("txtNamePersona");
+                var txtMsj2 = document.getElementById("txtApellidoPersona");
+                const me = Object.create(personita);
+                me.nombre = txtMsj.value;
+                me.apellido = txtMsj2.value;
+                let val = JSON.stringify(me);
+                console.log(JSON.parse(val));
+                txtMsjs.value += "\n" + "YO: " + val;
+                //aqui se manda el mensaje de la caja de texto al websocket
+                ws.send(val);
+            }
+            //al cargarse la página se ejecuta esta función
+            window.onload = function () {
+                var txtMsjs = document.getElementById("txtMsjs");
+                var btn = document.getElementById("btn");
+                var btn2 = document.getElementById("btnPersona");
+                // se asigna el evento del click
+                btn.onclick = click;
+                btn2.onclick = click2;
+                //hace la conexión al web socket
+                ws = new WebSocket
+                        ("ws://localhost:8080/EjemploWS/websocketendpoint");
+                //la función que se ejecuta al abrirse la conexión
+                ws.onopen = function () {
+                    //se envía este mensaje al websocket
+                    ws.send("Ya me conecté");
+                    txtMsjs.value = "Ya me conecte";
+                };
+                //se asigna y define la función a ejecutarse cada que llegue un mensaje desde el websocket
+                ws.onmessage = function (evt) {
+                    var received_msg = evt.data;
+                    var txtMsjs = document.getElementById("txtMsjs");
+                    txtMsjs.value += "\n" + received_msg;
+                };
+
+                ws.onclose = function () {
+                    alert("Connection is closed...");
+                };
+            }
+        </script>
+    </head>
+    <body>
+        <p>Mensaje:</p> 
+        <input type="text" id="txtMsj" />
+        <input type="button" value="Enviar" id="btn"/>
+        <br/>        
+        <p>Mensajes:</p>
+        <textarea id="txtMsjs"></textarea>    
+
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <h2>Persona</h2>
+        <p>Nombre</p> 
+        <input type="text" id="txtNamePersona"/>
+        <p>apellido</p> 
+        <input type="text" id="txtApellidoPersona"/>
+        <input type="button" value="Enviar" id="btnPersona"/>
+    </body>
+</html>
