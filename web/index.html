@@ -6,91 +6,147 @@ and open the template in the editor.
 -->
 <html>
     <head>
-        <title>TODO supply a title</title>
+        <title>Chat-webSocket java  </title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            textarea {
-                width: 300px;
-                height: 150px;
+            #sendArea{
+                max-width:45%;
+                max-height: 30%;
+                background-color: antiquewhite;
+                position: absolute;
+                padding: 10% 0;
+                border-radius: 15px;
+            }
+            #receiveArea{
+                max-height: 100%;
+                max-width: 40%;
+                background-color: beige;
+                position: relative;
+                left: 50%;
+                align-items: center;
+                border-radius: 15px;
+
+            }
+            #receiveArea textarea{
+                background-color: aqua;
+                color: black;
+            }
+            textarea{
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                width: 450px;
+                height: 250px;
+
             }
         </style>
         <script>
             var ws = null;
-            //entidad a ser enviada 
-            const personita = {
-                nombre: "Pedro",
-                apellido: "lopez"
-            }
             //funcion que maneja el click del botón enviar
+            function enviarEntidadPrivado() {
+                var resp = window.prompt("Ingrese el username del usuario destino");
+                var txtNombre = document.getElementById("txtNombrePersona");
+                var txtApellidoPersona = document.getElementById("txtApellidoPersona");
+                var json = '{"id":"1","mensaje":{"Nombre":"' + txtNombre.value + '","Apellido":"' + txtApellidoPersona.value + '"},"tipoMensaje":"MENSAJE_ENTIDAD_PRIVADA","username":' + cliente.innerHTML + ',"destinatario":"' + resp + '"}';
+                ws.send(json);
+            }
             function click() {
                 var txtMsjs = document.getElementById("txtMsjs");
                 var txtMsj = document.getElementById("txtMsj");
-                txtMsjs.value += "\n" + "YO: " + txtMsj.value;
-                //aqui se manda el mensaje de la caja de texto al websocket
-                ws.send(txtMsj.value);
+                txtMsjs.value += "\n" + "You:" + txtMsj.value;
+                var json = '{"id":"1","mensaje":"' + cliente.innerHTML + ': ' + txtMsj.value + '","tipoMensaje":"NORMAL_MESSAGE","username":"","destinatario":"@everyone"}';
+                ws.send(json);
+            }
+            function enviarMensajePrivado() {
+                var resp = window.prompt("Ingrese el username del usuario destino");
+                var txtMsj = document.getElementById("txtMsj");
+                var json = '{"id":"1","mensaje":"' + cliente.innerHTML + ': ' + txtMsj.value + '","tipoMensaje":"PRIVATE_MESSAGE","username":' + cliente.innerHTML + ',"destinatario":"' + resp + '"}';
+                txtMsjs.value += "\n" + "YO a -" + resp + "-private- " + txtMsj.value;
+                ws.send(json);
+            }
+            function enviarEntidad() {
+                var txtNombrePersona = document.getElementById("txtNombrePersona");
+                var txtApellidoPersona = document.getElementById("txtApellidoPersona");
+                var json = '{"id":"1","mensaje":{"Nombre":"' + txtNombrePersona.value + '","Apellido":"' + txtApellidoPersona.value + '"},"tipoMensaje":"NORMAL_MESSAGE","username":' + cliente.innerHTML + ',"destinatario":"@everyone"}';
+                ws.send(json);
             }
 
-            function click2() {
-                var txtMsjs = document.getElementById("txtMsjs");
-                var txtMsj = document.getElementById("txtNamePersona");
-                var txtMsj2 = document.getElementById("txtApellidoPersona");
-                const me = Object.create(personita);
-                me.nombre = txtMsj.value;
-                me.apellido = txtMsj2.value;
-                let val = JSON.stringify(me);
-                console.log(JSON.parse(val));
-                txtMsjs.value += "\n" + "YO: " + val;
-                //aqui se manda el mensaje de la caja de texto al websocket
-                ws.send(val);
-            }
             //al cargarse la página se ejecuta esta función
             window.onload = function () {
                 var txtMsjs = document.getElementById("txtMsjs");
                 var btn = document.getElementById("btn");
-                var btn2 = document.getElementById("btnPersona");
                 // se asigna el evento del click
                 btn.onclick = click;
-                btn2.onclick = click2;
                 //hace la conexión al web socket
                 ws = new WebSocket
-                        ("ws://localhost:8080/EjemploWS/websocketendpoint");
+                        ("ws://localhost:8080/websockets/websocketchatExa");
+
+
                 //la función que se ejecuta al abrirse la conexión
                 ws.onopen = function () {
+                    var resp = window.prompt("Ingresa tu username");
                     //se envía este mensaje al websocket
-                    ws.send("Ya me conecté");
-                    txtMsjs.value = "Ya me conecte";
+                    var json = '{"id":"1","mensaje":"' + resp + ' se conecto","tipoMensaje":"MESSAGE_LOGIN","username":"' + resp + '","destinatario":"@everyone"}';
+                    ws.send(json);
+                    json = '{"id":"1","mensaje":"' + resp + ' se conecto","tipoMensaje":"CLIENT_MESSAGES","username":"' + resp + '","destinatario":"@everyone"}';
+                    ws.send(json);
+                    txtMsjs.value = "hola, " + resp;
+                    var nombre = document.getElementById("cliente");
+                    nombre.innerHTML = resp;
+
                 };
-                //se asigna y define la función a ejecutarse cada que llegue un mensaje desde el websocket
                 ws.onmessage = function (evt) {
-                    var received_msg = evt.data;
-                    var txtMsjs = document.getElementById("txtMsjs");
-                    txtMsjs.value += "\n" + received_msg;
+                    var obj = evt.data;
+                    try {
+                        obj = JSON.parse(obj);
+                    } catch (e) {
+                        console.log(obj.tipoMensaje)
+                    }
+                    if (obj.tipoMensaje === "CLIENT_MESSAGES") {
+                        var clientes = document.getElementById("clientes");
+                        clientes.value = obj.mensaje;
+                    } else if (obj.tipoMensaje === "MENSAJE_ENTIDAD_PRIVADA") {
+                        var txtMsjs = document.getElementById("txtMsjs");
+                        var cliente = "Cliente: "+obj.username + " - ";
+                        txtMsjs.value += "\n" + cliente+obj.mensaje;
+
+                    } else {
+                        var txtMsjs = document.getElementById("txtMsjs");
+                        txtMsjs.value += "\n" + obj.mensaje;
+                    }
                 };
 
                 ws.onclose = function () {
                     alert("Connection is closed...");
                 };
             }
+
         </script>
     </head>
     <body>
-        <p>Mensaje:</p> 
-        <input type="text" id="txtMsj" />
-        <input type="button" value="Enviar" id="btn"/>
-        <br/>        
-        <p>Mensajes:</p>
-        <textarea id="txtMsjs"></textarea>    
+        <main>
+            <section id="sendArea">
+                <h1 id="cliente"></h1>
+                <h2>Persona</h2> 
+                <input type="text" id="txtNombrePersona" placeholder="nombre" />
+                <input type="text" id="txtApellidoPersona" placeholder="apellido"/>
 
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <h2>Persona</h2>
-        <p>Nombre</p> 
-        <input type="text" id="txtNamePersona"/>
-        <p>apellido</p> 
-        <input type="text" id="txtApellidoPersona"/>
-        <input type="button" value="Enviar" id="btnPersona"/>
+                <button onclick="enviarEntidad()">Enviar entidad</button>
+                <button onclick="enviarEntidadPrivado()">Enviar entidad privada</button>
+                <br/><br/>
+                Mensaje: <input type="text" id="txtMsj" />
+                <input type="button" value="Enviar" id="btn"/>
+                <button onclick="enviarMensajePrivado()">Enviar mensaje privado</button>
+            </section>
+            <section id="receiveArea">
+                <br/><br/>  
+                <h3>Chat:</h3>
+                <textarea readonly id="txtMsjs"></textarea>   
+                <h3>Usuarios conectados:</h3>
+                <textarea readonly id="clientes"></textarea>  
+                <br/><br/> 
+            </section>  
+        </main>
     </body>
 </html>
